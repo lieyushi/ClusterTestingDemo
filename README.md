@@ -13,7 +13,9 @@ Email: shilieyu91@gmail.com
    I provide eigenrotation minimization and k-means++ as post-processing after Laplacian-based dimension reduction.
 
    ------------ Possibility is that ring structures can not be detected by k-means++ due to random initilization.
+
    ------------ Since no Gold Rules exist for comparison, all external measurement, including (adjusted) Rand Index, Entropy, V-measure are all not working.
+   
    ------------ Eigenvector rotation minization might not be able to detect correct structures.
 
 
