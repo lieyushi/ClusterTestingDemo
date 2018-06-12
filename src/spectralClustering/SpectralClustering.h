@@ -18,6 +18,7 @@
 #include "Initialization.h"
 #include "Evrot.h"
 #include "IOHandler.h"
+#include "ClusteringAnalysis.h"
 
 using namespace std;
 using namespace Eigen;

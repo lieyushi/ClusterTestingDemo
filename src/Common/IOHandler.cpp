@@ -324,3 +324,20 @@ void IOHandler::printVTK(const int& numOfNodes,
 
 }
 
+
+/* print information into README */
+void IOHandler::writeReadMe(const Analysis& analysis, const string& dataSet, const string& clustering)
+{
+	std::ofstream out_file("../test_data/README", ios::out|ios::app);
+	if (!out_file)
+	{
+		std::cout << "Error for creating README!" << std::endl;
+		exit(1);
+	}
+
+	out_file << clustering << " on dataset " << dataSet << " has following measurements: " << std::endl;
+	out_file << "Silhouette is " << analysis.getSilhouette() << ", DB-Index is " << analysis.getDBIndex() 
+	         << ", gamma is " << analysis.getGamma() << std::endl;
+	out_file << std::endl;
+	out_file.close();
+}

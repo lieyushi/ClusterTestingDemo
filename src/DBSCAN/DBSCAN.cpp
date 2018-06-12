@@ -66,6 +66,12 @@ void DBSCAN::performClustering()
 	DensityClustering(radius_eps, minPts);
 
 	IOHandler::printVTK(numOfNodes, coordinates, group, name, string("dbscan"));
+
+	Analysis analysis;
+	analysis.computeValue(coordinates, distanceMatrix, group);
+	std::cout << "Silhouette is " << analysis.getSilhouette() << ", db index is " << analysis.getDBIndex()
+	          << ", gamma statistics is " << analysis.getGamma() << std::endl;
+	IOHandler::writeReadMe(analysis, name , "DBSCAN");
 }
 
 

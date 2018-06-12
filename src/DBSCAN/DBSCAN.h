@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <queue>
 #include "IOHandler.h"
+#include "ClusteringAnalysis.h"
 #include "Initialization.h"
 
 enum PointType

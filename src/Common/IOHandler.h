@@ -13,6 +13,7 @@
 #include <float.h>
 #include <unordered_set>
 #include <sys/stat.h>
+#include "ClusteringAnalysis.h"
 
 
 using namespace std;
@@ -40,6 +41,9 @@ public:
 /* void print vtk file */
 	static void printVTK(const int& numOfNodes, const Eigen::MatrixXf& coordinates, const std::vector<int>& group,
 		                 const string& name, const string& groupName);
+
+/* print information into README */
+	static void writeReadMe(const Analysis& analysis, const string& dataSet, const string& clustering);
 };
 
 #endif

@@ -53,7 +53,11 @@ void SpectralClustering::performClustering(const int& presetCluster)
 
 	clusterByNorm();
 
-	std::cout << std::endl;
+	Analysis analysis;
+	analysis.computeValue(coordinates, distanceMatrix, group);
+	std::cout << "Silhouette is " << analysis.getSilhouette() << ", db index is " << analysis.getDBIndex()
+	          << ", gamma statistics is " << analysis.getGamma() << std::endl;
+	IOHandler::writeReadMe(analysis, name , "Spectral clustering");
 }
 
 

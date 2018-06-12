@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include "IOHandler.h"
 #include "Initialization.h"
-
+#include "ClusteringAnalysis.h"
 
 class Kmeans
 {
