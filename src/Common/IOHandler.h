@@ -44,6 +44,9 @@ public:
 
 /* print information into README */
 	static void writeReadMe(const Analysis& analysis, const string& dataSet, const string& clustering);
+
+/* print information into README */
+	static void writeReadMe(const float& value, const string& dataSet, const string& clustering, const string& value_name);
 };
 
 #endif

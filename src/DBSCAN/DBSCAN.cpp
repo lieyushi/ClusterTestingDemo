@@ -71,7 +71,12 @@ void DBSCAN::performClustering()
 	analysis.computeValue(coordinates, distanceMatrix, group);
 	std::cout << "Silhouette is " << analysis.getSilhouette() << ", db index is " << analysis.getDBIndex()
 	          << ", gamma statistics is " << analysis.getGamma() << std::endl;
+
+	ValidityMeasurement vm;
+	vm.computeValue(distanceMatrix, group);
 	IOHandler::writeReadMe(analysis, name , "DBSCAN");
+
+	IOHandler::writeReadMe(vm.f_c, name, "DBSCAN", "validity measurement");
 }
 
 

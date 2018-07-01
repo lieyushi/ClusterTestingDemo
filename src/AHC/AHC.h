@@ -8,6 +8,7 @@
 #include "IOHandler.h"
 #include "Initialization.h"
 #include "ClusteringAnalysis.h"
+#include "ValidityMeasurement.h"
 
 // define a treeNode structure to store AHC clustering tree
 struct Ensemble

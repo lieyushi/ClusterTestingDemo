@@ -7,6 +7,7 @@
 #include "IOHandler.h"
 #include "Initialization.h"
 #include "ClusteringAnalysis.h"
+#include "ValidityMeasurement.h"
 
 class Kmeans
 {

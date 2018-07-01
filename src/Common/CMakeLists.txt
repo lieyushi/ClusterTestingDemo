@@ -2,10 +2,8 @@
 cmake_minimum_required (VERSION 2.6)
 
 set( component_SOURCES  
-	 Initialization.h
-	 Initialization.cpp
-	 IOHandler.h
-	 IOHandler.cpp
+	 *.h
+     *.cpp
    ) # Add the source-files for the component here
 
 include(CheckCXXCompilerFlag)

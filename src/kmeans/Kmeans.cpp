@@ -44,6 +44,11 @@ void Kmeans::performClustering()
 	std::cout << "Silhouette is " << analysis.getSilhouette() << ", db index is " << analysis.getDBIndex() 
 	          << ", gamma statistics is " << analysis.getGamma() << std::endl;
 	IOHandler::writeReadMe(analysis, name , "K-means");
+
+	ValidityMeasurement vm;
+	vm.computeValue(distanceMatrix, group);
+
+	IOHandler::writeReadMe(vm.f_c, name, "K-means", "validity measurement");
 }
 
 

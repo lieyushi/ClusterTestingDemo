@@ -8,6 +8,7 @@
 #include "IOHandler.h"
 #include "ClusteringAnalysis.h"
 #include "Initialization.h"
+#include "ValidityMeasurement.h"
 
 enum PointType
 {

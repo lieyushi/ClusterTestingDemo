@@ -58,6 +58,11 @@ void SpectralClustering::performClustering(const int& presetCluster)
 	std::cout << "Silhouette is " << analysis.getSilhouette() << ", db index is " << analysis.getDBIndex()
 	          << ", gamma statistics is " << analysis.getGamma() << std::endl;
 	IOHandler::writeReadMe(analysis, name , "Spectral clustering");
+
+	ValidityMeasurement vm;
+	vm.computeValue(distanceMatrix, group);
+
+	IOHandler::writeReadMe(vm.f_c, name, "Spectral clustering", "validity measurement");
 }
 
 

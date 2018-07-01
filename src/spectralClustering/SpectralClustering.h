@@ -19,6 +19,7 @@
 #include "Evrot.h"
 #include "IOHandler.h"
 #include "ClusteringAnalysis.h"
+#include "ValidityMeasurement.h"
 
 using namespace std;
 using namespace Eigen;

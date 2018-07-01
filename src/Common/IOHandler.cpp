@@ -341,3 +341,19 @@ void IOHandler::writeReadMe(const Analysis& analysis, const string& dataSet, con
 	out_file << std::endl;
 	out_file.close();
 }
+
+
+/* print information into README */
+void IOHandler::writeReadMe(const float& value, const string& dataSet, const string& clustering, const string& value_name)
+{
+	std::ofstream out_file("../test_data/README", ios::out|ios::app);
+	if (!out_file)
+	{
+		std::cout << "Error for creating README!" << std::endl;
+		exit(1);
+	}
+
+	out_file << "The " << value_name << " of " << clustering << " on dataset " << dataSet << " is " << value << std::endl;
+	out_file << std::endl;
+	out_file.close();
+}
