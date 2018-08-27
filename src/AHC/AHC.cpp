@@ -39,9 +39,22 @@ AHC::AHC(const int& argc, char* argv[])
 
 	group = std::vector<int>(numOfNodes);
 
-	std::cout << "Input preset number of clusters: " << std::endl;
-	std::cin >> numOfClusters;
-	assert(numOfClusters>0 && numOfClusters<=numOfNodes);
+	std::cout << "L method activated? 0: No, 1: Yes. " << std::endl;
+	std::cin >> lMethod;
+	assert(lMethod==0||lMethod==1);
+	lMethod = (lMethod==1);
+
+	if(lMethod)
+	{
+		numOfClusters = 1;
+	}
+
+	else
+	{
+		std::cout << "Input preset number of clusters: " << std::endl;
+		std::cin >> numOfClusters;
+		assert(numOfClusters>0 && numOfClusters<=numOfNodes);
+	}
 
 	std::cout << "Choose linkage type: 1.single, 2.complete, 3.average: " << std::endl;
 	std::cin >> linkageType;
@@ -65,32 +78,35 @@ void AHC::performClustering()
 	std::vector<DistNode> dNodeVec;
 	std::vector<Ensemble> nodeVec;
 
-	setValue(dNodeVec);
+	setValue(dNodeVec, nodeMap);
 
 	hierarchicalMerging(nodeMap, dNodeVec, nodeVec);
 
-	string groupName;
+	if(!lMethod)
+	{
+		string groupName;
 
-	if(linkageType==1)
-		groupName = "ahc_single";
-	else if(linkageType==2)
-		groupName = "ahc_complete";
-	else if(linkageType==3)
-		groupName = "ahc_average";
+		if(linkageType==1)
+			groupName = "ahc_single";
+		else if(linkageType==2)
+			groupName = "ahc_complete";
+		else if(linkageType==3)
+			groupName = "ahc_average";
 
-	IOHandler::printVTK(numOfNodes, coordinates, group, name, groupName);
+		IOHandler::printVTK(numOfNodes, coordinates, group, name, groupName);
 
-	Analysis analysis;
-	analysis.computeValue(coordinates, distanceMatrix, group);
-	std::cout << "Silhouette is " << analysis.getSilhouette() << ", db index is " << analysis.getDBIndex()
-	          << ", gamma statistics is " << analysis.getGamma() << std::endl;
+		Analysis analysis;
+		analysis.computeValue(coordinates, distanceMatrix, group);
+		std::cout << "Silhouette is " << analysis.getSilhouette() << ", db index is " << analysis.getDBIndex()
+		          << ", gamma statistics is " << analysis.getGamma() << std::endl;
 
-	ValidityMeasurement vm;
-	vm.computeValue(distanceMatrix, group);
+		ValidityMeasurement vm;
+		vm.computeValue(distanceMatrix, group);
 
-	IOHandler::writeReadMe(analysis, name , groupName);
+		IOHandler::writeReadMe(analysis, name , groupName);
 
-	IOHandler::writeReadMe(vm.f_c, name, groupName, "validity measurement");
+		IOHandler::writeReadMe(vm.f_c, name, groupName, "validity measurement");
+	}
 }
 
 
@@ -119,15 +135,12 @@ void AHC::setValue(std::vector<DistNode>& dNodeVec)
 void AHC::hierarchicalMerging(std::unordered_map<int, Ensemble>& nodeMap, std::vector<DistNode>& dNodeVec,
 							  std::vector<Ensemble>& nodeVec)
 {
+	std::map<int, float> dist_map;
+
 	/* would store distance matrix instead because it would save massive time */
 	struct timeval start, end;
 	double timeTemp;
 	gettimeofday(&start, NULL);
-
-	for(int i=0;i<numOfNodes;++i)
-	{
-		nodeMap[i].element.push_back(i);
-	}
 
 	DistNode poped;
 
@@ -147,6 +160,10 @@ void AHC::hierarchicalMerging(std::unordered_map<int, Ensemble>& nodeMap, std::v
 	int index = numOfNodes, currentNumber;
 	do
 	{
+		if(lMethod)
+		{
+			dist_map.insert(std::make_pair(nodeMap.size(), poped.distance));
+		}
 		//create new node merged and input it into hash map
 		vector<int> first = (nodeMap[poped.first]).element;
 		vector<int> second = (nodeMap[poped.second]).element;
@@ -206,47 +223,62 @@ void AHC::hierarchicalMerging(std::unordered_map<int, Ensemble>& nodeMap, std::v
 			}
 		}
 
-		poped = tempVec[target];
+		if(target>=0 && tempVec.size()>=1)
+		{
+			poped = tempVec[target];
 
-		/* judge whether current is assigned to right value */
-		assert(current==tempVec.size());
-		dNodeVec.clear();
-		dNodeVec = tempVec;
-		tempVec.clear();
-		++index;
+			/* judge whether current is assigned to right value */
+			assert(current==tempVec.size());
+			dNodeVec.clear();
+			dNodeVec = tempVec;
+			tempVec.clear();
+			++index;
+		}
 	}while(nodeMap.size()!=numOfClusters);	//merging happens whenever requested cluster is not met
 
-	nodeVec=std::vector<Ensemble>(nodeMap.size());
-	int tag = 0, clusSize;
-
-	std::cout << "Final cluster number is " << nodeMap.size() << std::endl;
-/* assign label to each object inside one cluster */
-	std::vector<int> eachCluster;
-	for(auto iter=nodeMap.begin();iter!=nodeMap.end();++iter)
+	if(lMethod)
 	{
-		nodeVec[tag]=(*iter).second;
-		eachCluster = nodeVec[tag].element;
-		clusSize = eachCluster.size();
-		std::cout << "cluster " << tag << " has " << clusSize << " elements!" << std::endl;
-		for (int i = 0; i < clusSize; ++i)
-		{
-			group[eachCluster[i]] = tag;
-		}
-		++tag;
+		/* perform L-method computation to detect optimal number of AHC */
+		DetermClusterNum dcn;
+		dcn.iterativeRefinement(dist_map);
+		std::cout << "Otimal number of clusters by L-Method is " << dcn.getFinalNumOfClusters() << std::endl;
+		dcn.recordLMethodResult(0);
 	}
 
-	gettimeofday(&end, NULL);
-	timeTemp = ((end.tv_sec  - start.tv_sec) * 1000000u + end.tv_usec - start.tv_usec) / 1.e6;
+	else
+	{
+		nodeVec=std::vector<Ensemble>(nodeMap.size());
+		int tag = 0, clusSize;
 
-	activityList.push_back("Hirarchical clustering for "+
-			               to_string(numOfClusters)+" groups takes: ");
-	timeList.push_back(to_string(timeTemp)+" s");
-	/* task completed, would delete memory contents */
-	dNodeVec.clear();
-	nodeMap.clear();
-	/* use alpha function to sort the group by its size */
-	std::sort(nodeVec.begin(), nodeVec.end(), [](const Ensemble& e1, const Ensemble& e2)
-	{return e1.element.size()<e2.element.size() ||(e1.element.size()==e2.element.size()&&e1.index<e2.index);});
+		std::cout << "Final cluster number is " << nodeMap.size() << std::endl;
+	/* assign label to each object inside one cluster */
+		std::vector<int> eachCluster;
+		for(auto iter=nodeMap.begin();iter!=nodeMap.end();++iter)
+		{
+			nodeVec[tag]=(*iter).second;
+			eachCluster = nodeVec[tag].element;
+			clusSize = eachCluster.size();
+			std::cout << "cluster " << tag << " has " << clusSize << " elements!" << std::endl;
+			for (int i = 0; i < clusSize; ++i)
+			{
+				group[eachCluster[i]] = tag;
+			}
+			++tag;
+		}
+
+		gettimeofday(&end, NULL);
+		timeTemp = ((end.tv_sec  - start.tv_sec) * 1000000u + end.tv_usec - start.tv_usec) / 1.e6;
+
+		activityList.push_back("Hirarchical clustering for "+
+				               to_string(numOfClusters)+" groups takes: ");
+		timeList.push_back(to_string(timeTemp)+" s");
+		/* task completed, would delete memory contents */
+		dNodeVec.clear();
+		nodeMap.clear();
+		/* use alpha function to sort the group by its size */
+		std::sort(nodeVec.begin(), nodeVec.end(), [](const Ensemble& e1, const Ensemble& e2)
+		{return e1.element.size()<e2.element.size() ||(e1.element.size()==e2.element.size()&&e1.index<e2.index);});
+	}
 }
 
 
@@ -317,3 +349,75 @@ const float AHC::getDistAtNodes(const vector<int>& firstList, const vector<int>&
 	}
 	return result;
 }
+
+
+
+/* set a vector for min-heap */
+void AHC::setValue(std::vector<DistNode>& dNodeVec, std::unordered_map<int, Ensemble>& node_map)
+{
+
+	/* find the node of closest distance */
+	std::vector<int> miniNode(numOfNodes);
+#pragma omp parallel for schedule(static) num_threads(8)
+	for(int i=0;i<numOfNodes;++i)
+	{
+		float miniDist = FLT_MAX, dist;
+		int index = -1;
+		for(int j=0;j<numOfNodes;++j)
+		{
+			if(i==j)
+				continue;
+			dist = distanceMatrix(i,j);
+
+			if(miniDist>dist)
+			{
+				miniDist=dist;
+				index=j;
+			}
+		}
+		miniNode[i]=index;
+	}
+
+	std::vector<bool> isIn(numOfNodes, false);
+
+	int tag = 0;
+	for(int i=0;i<numOfNodes;++i)
+	{
+		if(!isIn[i])
+		{
+			Ensemble en;
+			if(miniNode[miniNode[i]]==i)
+			{
+				en.element.push_back(i);
+				en.element.push_back(miniNode[i]);
+				isIn[i]=true;
+				isIn[miniNode[i]]=true;
+				node_map[tag] = en;
+			}
+			else
+			{
+				en.element.push_back(i);
+				isIn[i]=true;
+				node_map[tag] = en;
+			}
+			++tag;
+		}
+	}
+
+	const int& mapSize = node_map.size();
+	dNodeVec = std::vector<DistNode>(mapSize*(mapSize-1)/2);
+
+	tag = 0;
+	for(auto start = node_map.begin(); start!=node_map.end(); ++start)
+	{
+		for(auto end = node_map.begin(); end!=node_map.end() && end!=start; ++end)
+		{
+			dNodeVec[tag].first = start->first;
+			dNodeVec[tag].second = end->first;
+			dNodeVec[tag].distance = getDistAtNodes(start->second.element,end->second.element);
+			++tag;
+		}
+	}
+	assert(tag==dNodeVec.size());
+}
+

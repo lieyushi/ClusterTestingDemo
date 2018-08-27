@@ -9,6 +9,7 @@
 #include "Initialization.h"
 #include "ClusteringAnalysis.h"
 #include "ValidityMeasurement.h"
+#include "DetermClusterNum.h"
 
 // define a treeNode structure to store AHC clustering tree
 struct Ensemble
@@ -93,6 +94,9 @@ private:
 /* get distance between clusters given linkage type */
 	const float getDistAtNodes(const vector<int>& firstList, const vector<int>& secondList);
 
+/* set a vector for min-heap */
+	void setValue(std::vector<DistNode>& dNodeVec, std::unordered_map<int, Ensemble>& node_map);
+
 /* activityList vector to store event */
 	std::vector<string> activityList;
 
@@ -101,6 +105,9 @@ private:
 
 /* linkage option, 1.single, 2.complete, 3.average */
 	int linkageType;
+
+/* bool lMethod */
+	bool lMethod;
 
 };
 

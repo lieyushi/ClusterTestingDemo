@@ -22,13 +22,8 @@ void DetermClusterNum::iterativeRefinement(std::map<int, float>& eval_graph)
 {
 	removeExtreme(eval_graph);
 
-	for(auto iter:eval_graph)
-	{
-		std::cout << iter.first << ", " << iter.second << std::endl;
-	}
 	int cutoff, lastKnee;
 	int currentKnee = eval_graph.rbegin()->first;
-	std::cout << currentKnee << std::endl;
 	cutoff = currentKnee;
 	do
 	{
@@ -127,7 +122,7 @@ const int DetermClusterNum::LMethod(const std::map<int, float>& eval_graph, cons
 /* write the number in a file */
 void DetermClusterNum::recordLMethodResult(const int& normOption)
 {
-	std::ofstream readme("../dataset/LMethod",ios::out | ios::app);
+	std::ofstream readme("../test_data/LMethod",ios::out | ios::app);
 	if(!readme)
 	{
 		std::cout << "Error creating readme!" << std::endl;
