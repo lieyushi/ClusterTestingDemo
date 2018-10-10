@@ -84,6 +84,18 @@ private:
 /* preset cluster number */
 	int numOfClusters;
 
+/* std::vector<float> */
+	std::vector<float> curveValue[4];
+
+/* bool getCurve */
+	bool getCurve;
+
+/* int maximal number */
+	int maxNumOfCluster;
+
+/* cluster number vector */
+	std::vector<int> clusterVec;
+
 /* run k-means clustering */
 	void hierarchicalMerging(std::unordered_map<int, Ensemble>& nodeMap, std::vector<DistNode>& dNodeVec,
 							 std::vector<Ensemble>& nodeVec);

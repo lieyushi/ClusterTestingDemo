@@ -44,22 +44,37 @@ AHC::AHC(const int& argc, char* argv[])
 	assert(lMethod==0||lMethod==1);
 	lMethod = (lMethod==1);
 
+	std::cout << "Choose linkage type: 1.single, 2.complete, 3.average: " << std::endl;
+	std::cin >> linkageType;
+
+	assert(linkageType==1||linkageType==2||linkageType==3);
+
+	std::cout << "Start curve acquisition process? 0: No, 1:Yes. " << std::endl;
+	std::cin >> getCurve;
+	assert(getCurve==0||getCurve==1);
+	getCurve = (getCurve==1);
+
+	if(getCurve)
+	{
+		std::cout << "Input maximal number for curve plotting between [1, " << numOfNodes <<"]: ";
+		std::cin >> maxNumOfCluster;
+		assert(maxNumOfCluster>=1&&maxNumOfCluster<numOfNodes);
+	}
+
 	if(lMethod)
 	{
 		numOfClusters = 1;
 	}
-
+	else if(getCurve)
+	{
+		numOfClusters = 2;
+	}
 	else
 	{
 		std::cout << "Input preset number of clusters: " << std::endl;
 		std::cin >> numOfClusters;
 		assert(numOfClusters>0 && numOfClusters<=numOfNodes);
 	}
-
-	std::cout << "Choose linkage type: 1.single, 2.complete, 3.average: " << std::endl;
-	std::cin >> linkageType;
-
-	assert(linkageType==1||linkageType==2||linkageType==3);
 }
 
 
@@ -81,8 +96,7 @@ void AHC::performClustering()
 	setValue(dNodeVec, nodeMap);
 
 	hierarchicalMerging(nodeMap, dNodeVec, nodeVec);
-
-	if(!lMethod)
+	if(!lMethod && !getCurve)
 	{
 		string groupName;
 
@@ -106,6 +120,33 @@ void AHC::performClustering()
 		IOHandler::writeReadMe(analysis, name , groupName);
 
 		IOHandler::writeReadMe(vm.f_c, name, groupName, "validity measurement");
+	}
+	else if(getCurve)
+	{
+		std::ofstream curve_output("../test_data/curveValue.txt", ios::out);
+		if(curve_output.fail())
+		{
+			std::cout << "Error for creating txt file for output!" << std::endl;
+			exit(1);
+		}
+
+		for (int i = 0; i < clusterVec.size(); ++i)
+		{
+			curve_output << clusterVec[i] << " ";
+		}
+		curve_output << std::endl;
+
+		for (int i = 0; i < 4; ++i)
+		{
+			for (int j=0; j < curveValue[i].size(); ++j)
+			{
+				curve_output << curveValue[i][j] << " ";
+			}
+			curve_output << std::endl;
+			curve_output << std::endl;
+		}
+
+		curve_output.close();
 	}
 }
 
@@ -158,6 +199,8 @@ void AHC::hierarchicalMerging(std::unordered_map<int, Ensemble>& nodeMap, std::v
 	poped = dNodeVec[target];
 
 	int index = numOfNodes, currentNumber;
+
+
 	do
 	{
 		if(lMethod)
@@ -234,50 +277,90 @@ void AHC::hierarchicalMerging(std::unordered_map<int, Ensemble>& nodeMap, std::v
 			tempVec.clear();
 			++index;
 		}
-	}while(nodeMap.size()!=numOfClusters);	//merging happens whenever requested cluster is not met
 
-	if(lMethod)
-	{
-		/* perform L-method computation to detect optimal number of AHC */
-		DetermClusterNum dcn;
-		dcn.iterativeRefinement(dist_map);
-		std::cout << "Otimal number of clusters by L-Method is " << dcn.getFinalNumOfClusters() << std::endl;
-		dcn.recordLMethodResult(0);
-	}
-
-	else
-	{
-		nodeVec=std::vector<Ensemble>(nodeMap.size());
-		int tag = 0, clusSize;
-
-		std::cout << "Final cluster number is " << nodeMap.size() << std::endl;
-	/* assign label to each object inside one cluster */
-		std::vector<int> eachCluster;
-		for(auto iter=nodeMap.begin();iter!=nodeMap.end();++iter)
+		if(getCurve)
 		{
-			nodeVec[tag]=(*iter).second;
-			eachCluster = nodeVec[tag].element;
-			clusSize = eachCluster.size();
-			std::cout << "cluster " << tag << " has " << clusSize << " elements!" << std::endl;
-			for (int i = 0; i < clusSize; ++i)
+			if(nodeMap.size()<=maxNumOfCluster)
 			{
-				group[eachCluster[i]] = tag;
+				std::cout << "Currently have " << nodeMap.size() << " clusters..." << std::endl;
+				clusterVec.push_back(nodeMap.size());
+
+				nodeVec=std::vector<Ensemble>(nodeMap.size());
+				int tag = 0, clusSize;
+
+				std::cout << "Final cluster number is " << nodeMap.size() << std::endl;
+				/* assign label to each object inside one cluster */
+				std::vector<int> eachCluster;
+				for(auto iter=nodeMap.begin();iter!=nodeMap.end();++iter)
+				{
+					nodeVec[tag]=(*iter).second;
+					eachCluster = nodeVec[tag].element;
+					clusSize = eachCluster.size();
+					for (int i = 0; i < clusSize; ++i)
+					{
+						group[eachCluster[i]] = tag;
+					}
+					++tag;
+				}
+				Analysis analysis;
+				analysis.computeValue(coordinates, distanceMatrix, group);
+				curveValue[0].push_back(analysis.getSilhouette());
+				curveValue[1].push_back(analysis.getGamma());
+				curveValue[2].push_back(analysis.getDBIndex());
+
+				ValidityMeasurement vm;
+				vm.computeValue(distanceMatrix, group);
+				curveValue[3].push_back(vm.f_c);
 			}
-			++tag;
 		}
 
-		gettimeofday(&end, NULL);
-		timeTemp = ((end.tv_sec  - start.tv_sec) * 1000000u + end.tv_usec - start.tv_usec) / 1.e6;
+	}while(nodeMap.size()!=numOfClusters);	//merging happens whenever requested cluster is not met
 
-		activityList.push_back("Hirarchical clustering for "+
-				               to_string(numOfClusters)+" groups takes: ");
-		timeList.push_back(to_string(timeTemp)+" s");
-		/* task completed, would delete memory contents */
-		dNodeVec.clear();
-		nodeMap.clear();
-		/* use alpha function to sort the group by its size */
-		std::sort(nodeVec.begin(), nodeVec.end(), [](const Ensemble& e1, const Ensemble& e2)
-		{return e1.element.size()<e2.element.size() ||(e1.element.size()==e2.element.size()&&e1.index<e2.index);});
+	if(!getCurve)
+	{
+		if(lMethod)
+		{
+			/* perform L-method computation to detect optimal number of AHC */
+			DetermClusterNum dcn;
+			dcn.iterativeRefinement(dist_map);
+			std::cout << "Otimal number of clusters by L-Method is " << dcn.getFinalNumOfClusters() << std::endl;
+			dcn.recordLMethodResult(0);
+		}
+
+		else
+		{
+			nodeVec=std::vector<Ensemble>(nodeMap.size());
+			int tag = 0, clusSize;
+
+			std::cout << "Final cluster number is " << nodeMap.size() << std::endl;
+		/* assign label to each object inside one cluster */
+			std::vector<int> eachCluster;
+			for(auto iter=nodeMap.begin();iter!=nodeMap.end();++iter)
+			{
+				nodeVec[tag]=(*iter).second;
+				eachCluster = nodeVec[tag].element;
+				clusSize = eachCluster.size();
+				std::cout << "cluster " << tag << " has " << clusSize << " elements!" << std::endl;
+				for (int i = 0; i < clusSize; ++i)
+				{
+					group[eachCluster[i]] = tag;
+				}
+				++tag;
+			}
+
+			gettimeofday(&end, NULL);
+			timeTemp = ((end.tv_sec  - start.tv_sec) * 1000000u + end.tv_usec - start.tv_usec) / 1.e6;
+
+			activityList.push_back("Hirarchical clustering for "+
+					               to_string(numOfClusters)+" groups takes: ");
+			timeList.push_back(to_string(timeTemp)+" s");
+			/* task completed, would delete memory contents */
+			dNodeVec.clear();
+			nodeMap.clear();
+			/* use alpha function to sort the group by its size */
+			std::sort(nodeVec.begin(), nodeVec.end(), [](const Ensemble& e1, const Ensemble& e2)
+			{return e1.element.size()<e2.element.size() ||(e1.element.size()==e2.element.size()&&e1.index<e2.index);});
+		}
 	}
 }
 
