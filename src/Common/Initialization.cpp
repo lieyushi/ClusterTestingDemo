@@ -83,9 +83,6 @@ void Initialization::generateFarSamples(MatrixXf& clusterCenter,
 
 		distance = distance/distance.sum();
 
-		/* want to sort the distance values first */
-		std::sort(&(distance(0)),&(distance(0))+Total);
-
 		left = 0.0, right = 0.0;
 		for (int i = 0; i < Total; ++i)
 		{
